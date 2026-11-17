@@ -1,0 +1,7 @@
+$ ruff check src tests
+All checks passed!
+(exit code 0)
+
+$ mypy src   (strict mode, configured in pyproject.toml; Day 03 package checked from its own folder via mypy_path)
+Success: no issues found in 6 source files
+(exit code 0)
