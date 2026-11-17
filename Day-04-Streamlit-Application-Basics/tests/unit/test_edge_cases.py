@@ -149,6 +149,86 @@ def test_row_with_too_many_fields_is_rejected() -> None:
     )
 
 
+# --- code-review regressions (B1-B3 from the Day 04 review) ----------------------
+# B1: a non-finite number must never reach the analytics.
+# B2: rows wider than the header must not shift data into the wrong columns.
+# B3: duplicate header names must be caught on the raw header, before anything
+#     renames them (pandas would turn "priority,priority" into "priority.1").
+
+NON_FINITE = ["inf", "-inf", "+inf", "Infinity", "-Infinity", "nan", "NaN", "1e309", "-1e309"]
+
+
+@pytest.mark.parametrize("value", NON_FINITE)
+def test_b1_non_finite_resolution_time_is_rejected(value: str) -> None:
+    data = csv_bytes(
+        f"T001,Ann Lee,high,technical,open,x,{value},4,2024-01-15",
+        "T002,Bo Chan,low,billing,open,y,2,4,2024-01-16",
+    )
+    result = analyse_upload("b1.csv", data)
+    assert (result.rows_read, result.valid_count) == (2, 1)
+    assert result.rejected == ((2, f"'resolution_time_hours' value '{value}' must be finite"),)
+    # Only the finite row is averaged; the rejected row's category is absent.
+    assert [(r.category, r.mean_hours, r.median_hours) for r in result.resolution_by_category] == [
+        ("billing", 2.0, 2.0)
+    ]
+    assert dict(result.quality)["Rejected rows"] == "1"
+
+
+@pytest.mark.parametrize("value", NON_FINITE)
+def test_b1_non_finite_customer_rating_is_rejected(value: str) -> None:
+    data = csv_bytes(f"T001,Ann Lee,low,billing,open,x,2,{value},2024-01-15")
+    result = analyse_upload("b1.csv", data)
+    assert (result.valid_count, result.resolution_by_category) == (0, ())
+    assert result.rejected == ((2, f"'customer_rating' value '{value}' must be a whole number"),)
+
+
+def test_b2_every_row_one_field_wider_than_the_header_is_rejected() -> None:
+    """The reviewer's case: every data row has one more field than the header.
+    It must fail with a clear message, never be read with the columns shifted."""
+    data = csv_bytes(
+        "EXTRA,T001,Ann Lee,low,billing,open,x,2,4,2024-01-15",
+        "EXTRA,T002,Bo Chan,high,technical,open,y,3,5,2024-01-16",
+    )
+    assert message_for("b2.csv", data) == (
+        "Row has 10 fields but the header defines 9 (b2.csv, line 2). "
+        "Remove the extra field(s) or quote values that contain commas."
+    )
+
+
+def test_b2_wide_row_after_valid_rows_rejects_the_whole_file() -> None:
+    data = csv_bytes(ROW, ROW.replace("T001", "T002"), ROW.replace("T001", "T003") + ",extra")
+    assert message_for("b2.csv", data) == (
+        "Row has 10 fields but the header defines 9 (b2.csv, line 4). "
+        "Remove the extra field(s) or quote values that contain commas."
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra", "shown"),
+    [
+        pytest.param("priority", "'priority', 'priority'", id="identical"),
+        pytest.param("PRIORITY", "'priority', 'PRIORITY'", id="case-variant"),
+        # Names are shown with repr(), so an invisible tab is visible as \t.
+        pytest.param("  priority\t", "'priority', '  priority\\t'", id="whitespace-variant"),
+    ],
+)
+def test_b3_duplicate_raw_header_is_rejected(extra: str, shown: str) -> None:
+    data = csv_bytes(ROW + ",high", header=HEADER + "," + extra)
+    assert message_for("b3.csv", data) == (
+        f"Header repeats column(s) after ignoring case and spaces: 'priority' appears as {shown} "
+        "(b3.csv, line 1). Keep exactly one column for each name."
+    )
+
+
+def test_b3_reviewer_header_is_rejected_for_the_duplicate_first() -> None:
+    """The reviewer's exact header: the duplicate is reported, not the missing columns."""
+    data = b"priority,priority,category,resolution_time_hours\nHigh,High,IT,2\n"
+    assert message_for("b3.csv", data) == (
+        "Header repeats column(s) after ignoring case and spaces: 'priority' appears as "
+        "'priority', 'priority' (b3.csv, line 1). Keep exactly one column for each name."
+    )
+
+
 def test_short_row_is_padded_and_reported() -> None:
     result = analyse_upload("short.csv", csv_bytes("T001,Ann Lee,low,billing,open,x"))
     assert result.rejected == ((2, "'created_at' is required but empty"),)

@@ -7,7 +7,7 @@
 | **Author** | Lakshit (HALCER) |
 | **Date** | 17 November 2026 |
 | **Status** | Implementation complete; manual UI checklist pending |
-| **Test result** | 154 passed, 0 failed — [`logs/test_results.txt`](logs/test_results.txt) |
+| **Test result** | 181 passed, 0 failed — [`logs/test_results.txt`](logs/test_results.txt) |
 | **Determinism** | Same results under 3 hash seeds, in reverse order and with each test alone — [`logs/test_isolation.txt`](logs/test_isolation.txt) |
 | **Static checks** | `ruff` clean · `mypy --strict` clean — [`logs/static_checks.txt`](logs/static_checks.txt) |
 
@@ -126,10 +126,10 @@ Day-04-Streamlit-Application-Basics/
 ├── tests/
 │   ├── unit/test_dashboard_analytics.py   11 tests
 │   ├── unit/test_service.py               41 tests
-│   ├── unit/test_edge_cases.py            62 tests
+│   ├── unit/test_edge_cases.py            86 tests
 │   ├── unit/test_determinism.py           11 tests
 │   ├── ui/test_app.py                     2 AppTest tests
-│   ├── api/test_api.py                    27 FastAPI TestClient tests
+│   ├── api/test_api.py                    30 FastAPI TestClient tests
 │   └── fixtures/                   empty, header-only, missing-columns, malformed-quote, all-rows-invalid CSVs
 ├── docs/ui_test_checklist.md       Manual UI test cases (to be filled in)
 ├── logs/                           test_results.txt, static_checks.txt, test_isolation.txt (real output)
@@ -235,7 +235,7 @@ The Streamlit app does **not** call the API. Both are independent front ends on 
 ## 7. Test
 
 ```bash
-pytest -q                    # all 154 Day 04 tests
+pytest -q                    # all 181 Day 04 tests
 pytest tests/unit            # unit tests, including service and dashboard analytics
 pytest tests/ui              # Streamlit AppTest (no-upload state)
 pytest tests/api             # FastAPI endpoints with real multipart uploads
@@ -250,10 +250,10 @@ mypy src
 | `unit/test_dashboard_analytics.py` | 11 | Fixed priority order with zero counts; sort by mean descending; tie-break by category; rounding to 2 decimals; mean vs median; tickets without time ignored and empty categories omitted; zero hours counted; input not changed; generators accepted |
 | `unit/test_service.py` | 41 | Exact message for each `UploadError` (empty, over 5 MB, header only, missing columns, malformed quote, unreadable); exactly 5 MB accepted; all-rows-invalid file returns `valid_count` 0; every §5 value on Day 03's `data/tickets.csv`; preview limit; temp directory deleted after success and after errors; no temp path in messages; unsafe file names; `infer_column_type` rules; no Streamlit or pandas import in `service.py` |
 | `ui/test_app.py` | 2 | AppTest: the no-upload state shows the title and "Upload a ticket CSV to begin." with no exception or error and no tabs; the sidebar lists the required columns and the 5 MB limit |
-| `unit/test_edge_cases.py` | 62 | See §7.5 |
+| `unit/test_edge_cases.py` | 86 | See §7.5, including the code-review regressions B1–B3 |
 | `unit/test_determinism.py` | 11 | Repeated calls identical; fixed-permutation and reversed row order give the same analytics; independent of working directory, temp directory and file name (except `source_name`); 16 concurrent calls in 8 threads do not interfere; identical `repr` of the result in fresh interpreters with `PYTHONHASHSEED` 0, 1 and 4242; cache key fixed and sensitive to both name and content |
 | `api/test_api.py` | 27 | `/health`; OpenAPI lists both endpoints; Day 03's `tickets.csv` over HTTP with every expected value; all-rows-invalid is a 200; the JSON equals the service result 1:1; 422 with the exact message for empty, header-only, missing-columns and malformed files; 413 over 5 MB; 422 when the `file` field is missing; unsafe file name made safe; no temp files left; a simulated bug gives a 500 without traceback or internals; identical requests give byte-identical responses; 300-character, Windows-device and Windows-path file names; content type ignored; wrong field, text instead of file, JSON body and missing file name all give 422; with two `file` parts the last one is used (pinned); `GET /analyse` gives 405; exactly 5 MB is not "too large"; `main.py` imports neither Streamlit nor `ticket_pipeline` |
-| **Total** | **154** | **154 passed, 0 failed** (`logs/test_results.txt`) |
+| **Total** | **181** | **181 passed, 0 failed** (`logs/test_results.txt`) |
 
 Day 03's own 127 tests are not duplicated here; they stay in, and run from, the Day 03 folder.
 
@@ -319,6 +319,16 @@ The uvicorn log showed only start-up lines and the pipeline's three `stage=parse
 | Priority bar chart | Possibly alphabetical (high, low, medium, urgent) | Always urgent, high, medium, low |
 
 **Edge cases already handled, now pinned by tests** (`tests/unit/test_edge_cases.py`): UTF-8 BOM; CRLF and CR-only line endings; latin-1, UTF-16 and binary (PNG) content; NUL bytes; a file that is only a newline or only spaces; a header with no final newline; a header followed by blank lines only; duplicate headers after normalising; upper-case and padded header names; extra columns; rows with too many or too few fields; a field over the CSV limit; blank lines between rows; multi-line quoted values; case-insensitive duplicate IDs; unknown categories; valid tickets without resolution times; rejection-rate rounding (0.0 %, 33.3 %, 66.7 %, 12.5 %, 100.0 %); path traversal and Windows paths in file names.
+
+**Code-review regressions (B1–B3)**
+
+The Day 04 code review lists three blocking defects for a pandas-based dashboard. Each was reproduced against this project; none of them occurs here, because Day 03's loader reads the raw CSV with the `csv` module and checks it before anything is analysed. The reviewer's cases are now pinned by tests so they can never come back.
+
+| Defect | Reviewer's input | Result here | Tests |
+|---|---|---|---|
+| B1 — non-finite number reaches the mean | `resolution_time_hours` = `inf` (also `-inf`, `+inf`, `Infinity`, `-Infinity`, `nan`, `NaN`, `1e309`, `-1e309`) | That row is **rejected** with `'resolution_time_hours' value 'inf' must be finite`; valid and rejected counts are correct and every mean stays finite. The same values in `customer_rating` are rejected too | `test_b1_non_finite_resolution_time_is_rejected` (9), `test_b1_non_finite_customer_rating_is_rejected` (9), `test_review_b1_infinite_resolution_time_is_a_rejected_row` (API) |
+| B2 — extra field silently shifts columns | Every data row has one more field than the header | The whole file is **refused** (UI error / API 422): `Row has 10 fields but the header defines 9 (…, line 2). Remove the extra field(s) or quote values that contain commas.` No index is inferred, so nothing is shifted | `test_b2_every_row_one_field_wider_than_the_header_is_rejected`, `test_b2_wide_row_after_valid_rows_rejects_the_whole_file`, `test_review_b2_b3_return_422_with_a_clear_message[b2-extra-field]` |
+| B3 — duplicate header renamed to `priority.1` | `priority,priority,category,resolution_time_hours` | The raw header is checked before any renaming: `Header repeats column(s) after ignoring case and spaces: 'priority' appears as 'priority', 'priority' …`. Identical, case-variant and whitespace-variant duplicates are all refused | `test_b3_duplicate_raw_header_is_rejected` (identical, case, whitespace), `test_b3_reviewer_header_is_rejected_for_the_duplicate_first`, `test_review_b2_b3_return_422_with_a_clear_message[b3-duplicate-header]` |
 
 ## 8. Data Contract
 

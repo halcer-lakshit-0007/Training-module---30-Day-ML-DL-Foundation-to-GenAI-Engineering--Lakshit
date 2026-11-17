@@ -8,8 +8,8 @@
 | **Date** | 17 November 2026 |
 | **Duration** | _[TO BE FILLED IN BY LAKSHIT]_ |
 | **Status** | Implementation complete; manual UI checklist not yet run |
-| **Test result** | 154 passed, 0 failed (`logs/test_results.txt`) |
-| **Determinism** | 154 passed under `PYTHONHASHSEED` 0, 1 and 4242, in reverse order, and with each test alone in a fresh process (`logs/test_isolation.txt`) |
+| **Test result** | 181 passed, 0 failed (`logs/test_results.txt`) |
+| **Determinism** | 181 passed under `PYTHONHASHSEED` 0, 1 and 4242, in reverse order, and with each test alone in a fresh process (`logs/test_isolation.txt`) |
 | **Static checks** | `ruff check src tests` clean; `mypy src` (strict, 6 files) clean (`logs/static_checks.txt`) |
 
 ---
@@ -50,8 +50,8 @@ _[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_
 | Service layer | `src/ticket_dashboard/service.py`: `analyse_upload`, `DashboardResult`, `UploadError`, `infer_column_type`, `safe_file_name` | Complete |
 | Streamlit UI | `src/ticket_dashboard/app.py`: sidebar, uploader, session cache, Preview / Analytics / Data quality tabs | Complete |
 | Tests | `tests/unit/test_dashboard_analytics.py` (11), `tests/unit/test_service.py` (41), `tests/ui/test_app.py` (2), 5 fixture CSVs | Complete |
-| FastAPI backend | `src/ticket_api/main.py`: `GET /health`, `POST /analyse`; `tests/api/test_api.py` (27 tests) | Complete |
-| Determinism and edge cases | `tests/unit/test_determinism.py` (11), `tests/unit/test_edge_cases.py` (62), 12 more API tests; fixes in `service.py` (file names, type inference, cache key) and `app.py` (fixed chart order); `.gitattributes`; `logs/test_isolation.txt` | Complete |
+| FastAPI backend | `src/ticket_api/main.py`: `GET /health`, `POST /analyse`; `tests/api/test_api.py` (30 tests) | Complete |
+| Determinism and edge cases | `tests/unit/test_determinism.py` (11), `tests/unit/test_edge_cases.py` (86), 12 more API tests; fixes in `service.py` (file names, type inference, cache key) and `app.py` (fixed chart order); `.gitattributes`; `logs/test_isolation.txt` | Complete |
 | Manual UI checklist | `docs/ui_test_checklist.md` (15 cases) | Written; **not yet executed** |
 | Packaging and docs | `pyproject.toml`, `requirements.txt`, `.gitignore`, `README.md`, this report; Day 04 row in the root README | Complete |
 
@@ -61,7 +61,7 @@ _[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_
 
 ```
 $ pytest -q
-154 passed, 1 warning in 30.53s
+181 passed, 1 warning in 30.41s
 
 $ ruff check src tests
 All checks passed!
@@ -72,11 +72,11 @@ Success: no issues found in 6 source files
 
 | Check | Result | Evidence |
 |---|---|---|
-| Full Day 04 test suite | 154 passed, 0 failed; 1 DeprecationWarning from inside Starlette 0.38.6 | `logs/test_results.txt` |
+| Full Day 04 test suite | 181 passed, 0 failed; 1 DeprecationWarning from inside Starlette 0.38.6 | `logs/test_results.txt` |
 | Static checks | ruff clean; mypy strict clean on 6 source files | `logs/static_checks.txt` |
-| Suite under `PYTHONHASHSEED` = 0, 1, 4242 | 154 passed each time | `logs/test_isolation.txt` |
-| Suite in reverse order (all 154 test ids reversed) | 154 passed | `logs/test_isolation.txt` |
-| Each test alone in a fresh process | 154 passed, 0 failed | `logs/test_isolation.txt` |
+| Suite under `PYTHONHASHSEED` = 0, 1, 4242 | 181 passed each time | `logs/test_isolation.txt` |
+| Suite in reverse order (all 181 test ids reversed) | 181 passed | `logs/test_isolation.txt` |
+| Each test alone in a fresh process | 181 passed, 0 failed | `logs/test_isolation.txt` |
 | Day 03's `data/tickets.csv` through the service | rows 10 / valid 7 / rejected 3 (lines 4, 7, 9); priorities urgent 1, high 2, medium 2, low 2; resolution technical 6.25, billing 3.0, account 2.0, unknown 1.5; rejection rate 30.0%; 2 valid tickets without resolution time; overall average 3.8 h. All equal the expected values | `test_service.py::test_sample_dataset_*` |
 | `streamlit run src/ticket_dashboard/app.py --server.headless true` for 15 s | Started, health endpoint returned `ok`, nothing on stderr, stopped | README §7.3 |
 | `uvicorn ticket_api.main:app --port 8765` with real `curl.exe` uploads | `/health` ok; `tickets.csv` returned 200 with 10 / 7 / 3 rows and a 30.0% rejection rate; `empty.csv` and `missing_columns.csv` returned 422; `/docs` returned 200 | README §7.4 |
@@ -111,6 +111,7 @@ Environment: Windows 11 (ARM64 hardware), Python 3.12.10 **x64** under emulation
 | 8 | `st.bar_chart` could show priorities alphabetically | Streamlit 1.39's `bar_chart` has no sort option | Vega-Lite spec with an explicit `sort` in the service's order |
 | 9 | Two new line-ending tests failed on this machine | Git (`core.autocrlf=true`) had checked `tickets.csv` out with CRLF (850 bytes instead of the committed 839) | Tests normalise line endings before converting; `.gitattributes` keeps Day 04's fixture CSVs LF |
 | 10 | Day 04 first contained a full copy of Day 03 (package, 127 tests, `tickets.csv`) | The brief asked to copy the package; the copy duplicated logic that already exists in the repository | Copies removed. Day 04 installs `ticket_pipeline` from the Day 03 folder and reads Day 03's `tickets.csv` via `DEFAULT_INPUT_PATH`; the dashboard analytics moved to `ticket_dashboard/analytics.py` |
+| 11 | Code review listed three blocking defects (B1 non-finite numbers reach the mean, B2 extra CSV fields shift columns, B3 duplicate headers renamed by pandas) | The review was of a pandas-based dashboard; each case was reproduced here before changing anything | None of the three occurs: the Day 03 loader rejects non-finite numbers per row, refuses rows wider than the header, and checks the raw header for duplicates. 27 regression tests added (24 service, 3 API) with the reviewer's exact inputs; README §7.5 |
 
 ---
 

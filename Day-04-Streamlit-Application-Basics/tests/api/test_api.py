@@ -132,6 +132,43 @@ def test_bad_files_return_422_with_the_service_message(
     )
 
 
+HEADER = ("id,customer,priority,category,status,description,"
+          "resolution_time_hours,customer_rating,created_at")
+
+
+def test_review_b1_infinite_resolution_time_is_a_rejected_row(client: TestClient) -> None:
+    data = (HEADER + "\nT001,Ann,high,technical,open,x,inf,4,2024-01-15"
+            "\nT002,Bo,low,billing,open,y,2,4,2024-01-16\n").encode()
+    code, body = upload(client, "b1.csv", data)
+    assert code == 200
+    assert (body["rows_read"], body["valid_count"]) == (2, 1)
+    assert body["rejected"] == [
+        {"line": 2, "problem": "'resolution_time_hours' value 'inf' must be finite"}]
+    assert body["resolution_by_category"] == [
+        {"category": "billing", "tickets_with_time": 1, "mean_hours": 2.0, "median_hours": 2.0}]
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        pytest.param(
+            (HEADER + "\nX,T001,Ann,low,billing,open,x,2,4,2024-01-15\n").encode(),
+            "Row has 10 fields but the header defines 9 (bad.csv, line 2). "
+            "Remove the extra field(s) or quote values that contain commas.",
+            id="b2-extra-field"),
+        pytest.param(
+            b"priority,priority,category,resolution_time_hours\nHigh,High,IT,2\n",
+            "Header repeats column(s) after ignoring case and spaces: 'priority' appears as "
+            "'priority', 'priority' (bad.csv, line 1). Keep exactly one column for each name.",
+            id="b3-duplicate-header"),
+    ],
+)
+def test_review_b2_b3_return_422_with_a_clear_message(
+    client: TestClient, data: bytes, expected: str
+) -> None:
+    assert upload(client, "bad.csv", data) == (422, {"detail": expected})
+
+
 def test_file_over_5_mb_returns_413(client: TestClient) -> None:
     code, body = upload(client, "big.csv", b"x" * (MAX_UPLOAD_BYTES + 1))
     assert (code, body) == (413, {"detail": TOO_LARGE_MESSAGE})
