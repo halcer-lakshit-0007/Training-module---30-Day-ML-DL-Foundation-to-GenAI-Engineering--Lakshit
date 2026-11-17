@@ -1,0 +1,3 @@
+# Keep test data byte-identical on every OS and Git setting (e.g. core.autocrlf=true),
+# so tests and the dashboard see exactly the same input everywhere.
+*.csv text eol=lf

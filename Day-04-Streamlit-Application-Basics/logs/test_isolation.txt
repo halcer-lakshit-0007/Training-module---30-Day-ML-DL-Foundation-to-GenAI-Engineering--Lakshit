@@ -1,0 +1,17 @@
+Test isolation and determinism runs
+Python: 3.12.10  pytest: pytest 8.3.3
+
+$ PYTHONHASHSEED=0 pytest -q -p no:cacheprovider
+154 passed, 1 warning in 30.22s
+
+$ PYTHONHASHSEED=1 pytest -q -p no:cacheprovider
+154 passed, 1 warning in 30.54s
+
+$ PYTHONHASHSEED=4242 pytest -q -p no:cacheprovider
+154 passed, 1 warning in 31.15s
+
+$ pytest -q -p no:cacheprovider @<all 154 test ids in reverse order>
+154 passed, 1 warning in 31.02s
+
+$ for each test id: pytest -q -p no:cacheprovider <id>   (each test alone, fresh process)
+each test alone: 154 passed, 0 failed (of 154)

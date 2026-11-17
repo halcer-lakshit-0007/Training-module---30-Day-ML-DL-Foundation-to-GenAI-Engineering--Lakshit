@@ -1,0 +1,9 @@
+# Day 03's ticket_pipeline package, installed from its own folder (not copied).
+# Run pip from the Day-04 folder so this relative path resolves.
+-e ../Day-03-Python-Engineering-Practices-Exceptions-Testing
+streamlit==1.39.0
+fastapi==0.115.0
+uvicorn==0.31.0
+python-multipart==0.0.12
+httpx==0.27.2
+pytest==8.3.3
