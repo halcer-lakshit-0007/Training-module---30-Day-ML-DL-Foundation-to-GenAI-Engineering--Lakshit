@@ -7,3 +7,4 @@ Consolidated repository for the HALCER 30-day training programme. Each day lives
 | 01 | Python Engineering — Ticket Data Pipeline | [Day-01-Python-Engineering-Ticket-Data-Pipeline](Day-01-Python-Engineering-Ticket-Data-Pipeline/) |
 | 02 | Object-Oriented Python — Reusable Modules | [Day-02-Object-Oriented-Python-Reusable-Modules](Day-02-Object-Oriented-Python-Reusable-Modules/) |
 | 03 | Python Engineering Practices — Exceptions & Testing | [Day-03-Python-Engineering-Practices-Exceptions-Testing](Day-03-Python-Engineering-Practices-Exceptions-Testing/) |
+| 04 | Streamlit & Application Basics | [Day-04-Streamlit-Application-Basics](Day-04-Streamlit-Application-Basics/) |
