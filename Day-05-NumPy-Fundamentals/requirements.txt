@@ -1,0 +1,7 @@
+# Core dependency (versions below are the ones the logs/ were produced with).
+numpy==2.0.2
+pytest==8.3.5
+# Optional: Day 03's ticket_pipeline (needs Python >= 3.11). Only the bridge
+# module and its integration test use it; everything else runs without it.
+# Run pip from the Day-05 folder so this relative path resolves.
+# -e ../Day-03-Python-Engineering-Practices-Exceptions-Testing

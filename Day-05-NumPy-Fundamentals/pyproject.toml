@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ticket-numerics"
+version = "1.0.0"
+description = "Day 05 - NumPy numerical utilities for the ticket analytics module"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Day 03's package (Python >= 3.11) is used from its own folder, never copied.
+# Without it, only the bridge integration test is skipped.
+pythonpath = ["src", "tests", "../Day-03-Python-Engineering-Practices-Exceptions-Testing/src"]
+addopts = "-ra --strict-markers"
