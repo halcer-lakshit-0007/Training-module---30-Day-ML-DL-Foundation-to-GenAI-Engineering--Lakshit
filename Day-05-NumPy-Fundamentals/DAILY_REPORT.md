@@ -34,13 +34,27 @@
 
 ### 1.1 Key learnings
 
-_[TO BE COMPLETED BY LAKSHIT]_
+_Drafted from the Day 05 session; review and edit in your own words before submission._
+
+- **NumPy does not raise on overflow.** Float64 overflow gives `inf` or `nan` (at most a warning), and later steps turn that into a plausible wrong number (`zscore` returned zeros). Check results are finite and raise.
+- **Missing values need one convention.** NaN in float64 keeps the code loop-free, and `None` is restored at the summary boundary so Day 03's contract holds. Plain `mean` on data with NaN returns NaN, and on an empty array it returns NaN plus a warning.
+- **Subclasses and look-alikes hide data.** A masked array's hidden `99` was read as real data; an integer array used as a "mask" would mean positions, not True/False.
+- **Shape rules are easy to state and easy to get wrong.** `(3,) + (3, 1)` silently gives `(3, 3)`. Checking my own rule against `np.broadcast_shapes` on every small shape pair was more convincing than a few examples.
+- **Floating point.** `0.1 + 0.2 != 0.3`; a small value next to `1e16` is absorbed; `E[x²] − E[x]²` cancels badly with a large offset; `NaN != NaN`. Compare with `isclose`.
+- **A speed-up claim needs a method.** Verify results agree first, warm up, repeat, report median and the environment. Counting the list→array conversion cut the gain from ~38× to ~2×.
+- **The CSV trap.** `csv.DictReader` can merge a row after an unterminated quote into the previous record; `csv.reader(strict=True)` raises. This is why reading stays in Day 03.
 
 ---
 
 ## 2. What I Can Explain Without Notes
 
-_[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_ Draft answers to the five viva questions are in `docs/day05_viva_answers.md`; they are a starting point, not a substitute for explaining them yourself.
+_Drafted from the Day 05 session; review and edit in your own words before submission._ Full answers with runnable checks: `docs/day05_viva_answers.md`.
+
+1. **What does `shape` tell you?** The size along each dimension, as a tuple: `(3, 4)` is 3 rows by 4 columns, `(7,)` a flat vector, `()` one number. It decides which operations are legal and what a reduction returns. `a[:, 1]` has shape `(3,)`, `a[:, 1:2]` has shape `(3, 1)`.
+2. **Broadcasting with a concrete example.** `hours` has shape `(2, 2)` and `hours.mean(axis=0)` has shape `(2,)`. Right-aligned they are `(2, 2)` and `(1, 2)`, so the one row of means is applied to every row without copying. Rule: align on the right; each pair of sizes must be equal or one must be 1. `(3,) + (4,)` fails.
+3. **List vs NumPy array.** A list holds pointers to separate Python objects of any type. An array holds one contiguous block of a single dtype plus shape and strides: smaller, vectorised in compiled code, slices are views. The dtype is fixed (an int array cannot hold NaN), and converting from a list has a cost (see `logs/benchmark.txt`).
+4. **What `axis` means.** The dimension that is collapsed. For `(rows, cols)`, `axis=0` collapses the rows (one value per column), `axis=1` collapses the columns (one per row), `axis=None` collapses everything. `keepdims=True` keeps that axis as size 1 so the result broadcasts back.
+5. **Why floats look imprecise.** Binary floating point stores finitely many binary digits and 0.1 has no exact form, so `0.1 + 0.2 == 0.30000000000000004`. Every operation rounds, so compare with `isclose`, expect small values to be absorbed next to huge ones, and expect cancellation in `E[x²] − E[x]²`.
 
 ---
 
@@ -132,7 +146,13 @@ Environment: macOS arm64, Python 3.9.6, NumPy 2.0.2, pytest 8.4.2.
 
 ## 7. Blocker and What I Tried
 
-_[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_ Facts that may help: Python ≥ 3.11 (needed by Day 03's `StrEnum`) was not available where Day 05 was built, so the Day 03 integration could only be run on a patched Python 3.9 copy.
+_Drafted from the Day 05 session; review and edit in your own words before submission._
+
+**Blocker:** Python ≥ 3.11 (needed by Day 03's `StrEnum`) was not available on the machine Day 05 was built on (only Python 3.9.6), so Day 05's Day 03 hand-off could not be run for real.
+
+**What I tried:** checked for other interpreters (none); kept the numerical core Python 3.9-compatible and duck-typed so it is testable on its own; then made a scratch copy of Day 03 patched only for 3.9 syntax and ran the whole suite against it (163 passed, §4). I also made the 4 tests that need Day 03 skip cleanly instead of fail when it is absent.
+
+**Still open:** run the suite on real Python ≥ 3.11 (`pip install -e ../Day-03-Python-Engineering-Practices-Exceptions-Testing && python -m pytest`) and record the result in §4.
 
 ---
 
@@ -157,4 +177,8 @@ _[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_ Facts th
 
 ## 9. Tomorrow's Plan
 
-_[TO BE WRITTEN BY LAKSHIT — placeholder. Not filled in on purpose.]_
+_Drafted from the Day 05 session; review and edit in your own words before submission._
+
+1. Run the Day 05 suite on real Python ≥ 3.11 with Day 03 installed and record the result in §4.
+2. Practise the five viva answers (§2) aloud without notes, plus: why `DictReader` merges a quoted row, `isnan` vs `isfinite` vs masks, and why the benchmark reports medians.
+3. Start Day 06 from its brief, reusing the Day 03 sample (7 valid tickets, mean 3.8 h) as the cross-check for any new numbers.
