@@ -7,7 +7,7 @@
 | **Author** | Lakshit (HALCER) |
 | **Date** | 18 November 2026 |
 | **Status** | Implementation complete; Day 03 integration not yet run on real Python ≥ 3.11 |
-| **Test result** | 159 passed, 4 skipped without Day 03 — [`logs/test_results.txt`](logs/test_results.txt); 163 passed with Day 03 on a Python 3.9–patched copy — [`logs/test_results_with_day03_py39_patched.txt`](logs/test_results_with_day03_py39_patched.txt) |
+| **Test result** | 183 passed, 4 skipped without Day 03 — [`logs/test_results.txt`](logs/test_results.txt); 187 passed with Day 03 on a Python 3.9–patched copy — [`logs/test_results_with_day03_py39_patched.txt`](logs/test_results_with_day03_py39_patched.txt) |
 | **Warnings** | Suite run with `-W error` |
 | **Benchmark** | [`logs/benchmark.txt`](logs/benchmark.txt) |
 
@@ -60,7 +60,7 @@ The criteria are taken from `Day_05_numpy_fundamentals.md` §6.
 | 1 | Array shapes and dtypes are correct | Ticket arrays have shape `(n,)` with dtypes float64 / int8 / bool / str; the numeric matrix has shape `(n, 2)`; an empty ticket list gives empty arrays of the same dtypes | `tests/test_arrays.py` (30 tests, incl. nine predicted-shape cases); `logs/array_exercises.txt` |
 | 2 | Broadcasting behaviour is explained accurately | The rule is written out in §8.2 and implemented by hand in `broadcast_shape`, which agrees with `np.broadcast_shapes` for every pair of shapes up to 2-D with sizes 0–3 and gives an error naming both shapes when they do not fit | `tests/test_broadcasting.py` (15 tests) |
 | 3 | Results match a manual or independent check | Hours from Day 03's sample: mean 19/5 = 3.8, median 3.0, std √(27.3/5) = 2.34; also cross-checked against `statistics`, `math.fsum` and NumPy-free loop twins (20 seeded random datasets) | `tests/test_metrics.py` (29), `tests/test_numerical.py` (10) |
-| 4 | Edge cases are tested | Empty, all-missing, single value, zero, ±inf, overflow, bool / text / 2-D input, constant data, ragged rows, wrong group codes, incompatible shapes, masked arrays, tiny benchmark sizes; no stray warnings | `tests/test_edge_cases.py` (22), `tests/test_regressions.py` (42) |
+| 4 | Edge cases are tested | Empty, all-missing, single value, zero, ±inf, overflow, bool / text / 2-D input, constant data, ragged rows, wrong group codes, incompatible shapes, masked arrays, tiny benchmark sizes; no stray warnings | `tests/test_edge_cases.py` (22), `tests/test_regressions.py` (66) |
 | 5 | Performance claims are supported by a reproducible comparison | `python -m ticket_numerics.benchmark` verifies loop and NumPy agree before timing, uses a warm-up and repeats, and prints method and environment | `logs/benchmark.txt`; §7.3 |
 | 6 | Missing values are handled deliberately | NaN = missing in float64; excluded from every statistic; "nothing present" returns `None` like Day 03 | `test_edge_cases.py`; §8.1 |
 | 7 | Reading and cleaning are reused, not re-implemented | `bridge.arrays_from_csv` calls Day 03's `run_pipeline`; no CSV parsing in Day 05's numerical code | `bridge.py`; `tests/test_csv_structure.py` |
@@ -104,7 +104,7 @@ Day-05-NumPy-Fundamentals/
 │   ├── cli.py · __main__.py    python -m ticket_numerics file.csv
 │   └── errors.py               NumericInputError, IncompatibleShapesError
 ├── scripts/show_arrays.py      prints Task A output
-├── tests/                      10 files, 163 tests
+├── tests/                      10 files, 187 tests
 ├── docs/day05_viva_answers.md  draft answers to the five viva questions
 └── logs/                       test, benchmark, array and CLI outputs
 ```
@@ -159,14 +159,14 @@ python -m pytest -v -W error
 | `test_broadcasting.py` | 15 | rule vs NumPy, axis semantics |
 | `test_numerical.py` | 10 | floating point, stability, seeds |
 | `test_benchmark.py` | 6 | structure, agreement check, argument errors |
-| `test_regressions.py` | 42 | every defect found by probing (DAILY_REPORT §5) |
+| `test_regressions.py` | 66 | every defect found by probing (DAILY_REPORT §5) |
 | `test_cli.py` | 4 | report values and exit codes (3 run anywhere, 1 needs Day 03) |
 | `test_csv_structure.py` | 4 | quote trap with the standard library (2); Day 03 loader (2, need Day 03) |
 | `test_bridge.py` | 1 | real Day 03 sample file (needs Day 03) |
 
 ### 7.2 Day 03 integration evidence
 
-Python ≥ 3.11 was not available where this was built. To still exercise the real hand-off, a **scratch copy** of Day 03 was patched only for Python 3.9 syntax (`StrEnum` stand-in, `ParamSpec` from `typing_extensions`, `zip(strict=)` removed; `csv.reader(strict=True)` kept) and the suite run against it: **163 passed, 0 skipped**. That includes Day 03's real loader rejecting this input and the CLI reading the real sample file:
+Python ≥ 3.11 was not available where this was built. To still exercise the real hand-off, a **scratch copy** of Day 03 was patched only for Python 3.9 syntax (`StrEnum` stand-in, `ParamSpec` from `typing_extensions`, `zip(strict=)` removed; `csv.reader(strict=True)` kept) and the suite run against it: **187 passed, 0 skipped**. That includes Day 03's real loader rejecting this input and the CLI reading the real sample file:
 
 ```
 ticket_id,priority,category,resolution_time_hours
@@ -174,7 +174,7 @@ T1,High,Technical,"5
 T2,Low,General,8
 ```
 
-`csv.DictReader` returns **one** record (T2 hidden inside T1's value); `csv.reader(strict=True)`, which Day 03 uses, raises. This is strong evidence, **not** a run on real Python 3.11 — repeat it there and expect 163 passed.
+`csv.DictReader` returns **one** record (T2 hidden inside T1's value); `csv.reader(strict=True)`, which Day 03 uses, raises. This is strong evidence, **not** a run on real Python 3.11 — repeat it there and expect 187 passed.
 
 ### 7.3 Benchmark (Task D)
 
@@ -201,7 +201,7 @@ Supported: on this machine NumPy was faster at every size tested, and most of th
 | `rating` | float64 | 1–5, whole numbers; **NaN = not rated** (float because integer arrays cannot hold NaN) |
 | `priority_rank` | int8 | low 0, medium 1, high 2, urgent 3 |
 | `category_code` | int8 | index into `CATEGORY_ORDER` = billing, technical, account, general, unknown |
-| `is_open` | bool | OPEN or PENDING |
+| `is_open` | bool | OPEN or PENDING; RESOLVED and CLOSED are False; any other status raises |
 
 `numeric_matrix()` has shape `(n, 2)`: hours and rating.
 
@@ -228,7 +228,7 @@ Align the two shapes on the **right**; for each position the sizes must be equal
 
 | Situation | Exception | Message (start) |
 |---|---|---|
-| bool, text, complex, dict, generator input | `NumericInputError` | `values: boolean values are not numbers` / `dtype … is not numeric` / `expected a list, tuple or array` |
+| bool (including mixed `[True, 1]`), text, complex, dict, generator input | `NumericInputError` | `values: bool is not a number` / `dtype … is not numeric` / `expected a list, tuple or array` |
 | wrong number of dimensions | `NumericInputError` | `values: expected 1-D data, got shape …` |
 | ragged rows, `10**400` | `NumericInputError` | `not a regular numeric array …` / `… is too large for float64` |
 | infinity | `NumericInputError` | `values: contains infinity` |
@@ -265,7 +265,7 @@ Align the two shapes on the **right**; for each position the sizes must be equal
 
 | # | Limitation | Impact / mitigation |
 |---|---|---|
-| 1 | The Day 03 integration has been run only on a Python 3.9–patched copy | Run `pytest` on real Python ≥ 3.11 and expect 163 passed (§7.2) |
+| 1 | The Day 03 integration has been run only on a Python 3.9–patched copy | Run `pytest` on real Python ≥ 3.11 and expect 187 passed (§7.2) |
 | 2 | Verified on Python 3.9.6 and NumPy 2.0.2 only | Other versions untested |
 | 3 | The benchmark measures one small operation, once, on one machine | It says nothing about I/O, pandas or other operations; rerun to reproduce |
 | 4 | float64 ratings lose precision above 2⁵³ | Irrelevant for ratings 1–5 |

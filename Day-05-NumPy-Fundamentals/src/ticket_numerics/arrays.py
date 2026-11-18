@@ -28,6 +28,9 @@ PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2, "urgent": 3}
 CATEGORY_ORDER: Tuple[str, ...] = ("billing", "technical", "account", "general", "unknown")
 CATEGORY_CODE = {name: code for code, name in enumerate(CATEGORY_ORDER)}
 OPEN_STATUSES = frozenset({"open", "pending"})      # same as Day 03 Ticket.OPEN_STATUSES
+CLOSED_STATUSES = frozenset({"resolved", "closed"})  # the only other Day 03 Status values
+VALID_STATUSES = OPEN_STATUSES | CLOSED_STATUSES
+_STATUS_TABLE = {name: int(name in OPEN_STATUSES) for name in sorted(VALID_STATUSES)}
 HIGH_RANK = PRIORITY_RANK["high"]                    # high and urgent are "high priority"
 
 
@@ -69,7 +72,9 @@ def as_float_array(
         raise NumericInputError(f"{name}: expected a list, tuple or array, got {type(values).__name__}")
     else:
         try:
-            array = np.asarray(values)
+            # dtype=object keeps every element's own type. Plain np.asarray would
+            # promote [True, 1] to int and silently erase the bool.
+            array = np.asarray(values, dtype=object)
         except (ValueError, TypeError) as exc:    # e.g. ragged nested lists
             raise NumericInputError(f"{name}: not a regular numeric array ({exc})") from None
     if array.dtype == object:
@@ -153,7 +158,7 @@ def from_tickets(tickets: Iterable[Any]) -> TicketArrays:
             ratings.append(t.customer_rating)
             prio.append(_lookup(PRIORITY_RANK, _label(t.priority), "priority"))
             cat.append(_lookup(CATEGORY_CODE, _label(t.category), "category"))
-            is_open.append(_label(t.status) in OPEN_STATUSES)
+            is_open.append(bool(_lookup(_STATUS_TABLE, _label(t.status), "status")))
         except AttributeError as exc:
             raise NumericInputError(f"ticket #{position} is missing an attribute: {exc}") from None
 

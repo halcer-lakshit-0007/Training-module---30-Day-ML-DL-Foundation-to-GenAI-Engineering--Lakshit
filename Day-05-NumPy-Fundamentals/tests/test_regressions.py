@@ -191,3 +191,48 @@ def test_checked_add_overflow_of_finite_inputs_is_an_error_not_inf():
 def test_checked_add_broadcasts_and_keeps_nan():
     out = checked_add(np.array([[1.0], [2.0]]), np.array([10.0, np.nan]))
     assert out.shape == (2, 2) and np.isnan(out[:, 1]).all() and out[:, 0].tolist() == [11.0, 12.0]
+
+
+# ---- code review 2026-11-18: two blocking defects ----
+
+@pytest.mark.parametrize("bad", [[True, 1], [False, 2.5], [1, True], [1.5, np.True_], (True, 2), [[1, 2], [True, 4]]])
+def test_mixed_bool_and_numeric_sequences_are_rejected(bad):
+    # np.asarray([True, 1]) silently becomes int [1, 1]; the bool must be caught first.
+    with pytest.raises(NumericInputError, match="bool"):
+        as_float_array(bad, ndim=None)
+
+
+@pytest.mark.parametrize("good,expected", [
+    ([1, 2, 3], [1.0, 2.0, 3.0]),
+    ([1, 2.5, None], [1.0, 2.5, np.nan]),
+    ([1.0, float("nan")], [1.0, np.nan]),
+    ((4, 5), [4.0, 5.0]),
+    ([], []),
+])
+def test_valid_numeric_controls_still_pass(good, expected):
+    out = as_float_array(good)
+    assert out.dtype == np.float64
+    np.testing.assert_array_equal(out, np.array(expected, dtype=float))
+
+
+def test_valid_2d_list_still_passes():
+    assert as_float_array([[1, 2], [3, 4.5]], ndim=2).shape == (2, 2)
+
+
+def _ticket(status):
+    return T(ticket_id="T1", resolution_time_hours=1.0, customer_rating=3,
+             priority="high", category="billing", status=status)
+
+
+@pytest.mark.parametrize("status", ["escalated", "INVALID", "", "opened", "on hold"])
+def test_unknown_status_is_rejected_not_treated_as_closed(status):
+    with pytest.raises(NumericInputError, match="status"):
+        from_tickets([_ticket(status)])
+
+
+@pytest.mark.parametrize("status,is_open", [
+    ("open", True), ("pending", True), ("OPEN", True), (" Pending ", True),
+    ("resolved", False), ("closed", False), ("Closed", False),
+])
+def test_valid_statuses_map_to_the_right_flag(status, is_open):
+    assert from_tickets([_ticket(status)]).is_open.tolist() == [is_open]

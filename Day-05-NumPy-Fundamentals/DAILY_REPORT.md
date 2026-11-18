@@ -9,7 +9,7 @@
 | **Date** | 18 November 2026 |
 | **Duration** | _[TO BE FILLED IN BY LAKSHIT]_ |
 | **Status** | Implementation complete; **not yet run on real Python ≥ 3.11** (see §4) |
-| **Test result** | 159 passed, 4 skipped without Day 03; 163 passed, 0 skipped with Day 03 on a Python 3.9–patched copy (`logs/test_results.txt`, `logs/test_results_with_day03_py39_patched.txt`) |
+| **Test result** | 183 passed, 4 skipped without Day 03; 187 passed, 0 skipped with Day 03 on a Python 3.9–patched copy (`logs/test_results.txt`, `logs/test_results_with_day03_py39_patched.txt`) |
 | **Warnings** | Suite run with `-W error`: any warning fails a test |
 | **Benchmark** | `logs/benchmark.txt` (method and environment recorded in the file) |
 
@@ -68,7 +68,7 @@ _Drafted from the Day 05 session; review and edit in your own words before submi
 | Task D — benchmark | `src/ticket_numerics/benchmark.py`; `logs/benchmark.txt` | Complete |
 | Day 03 reused, not copied | `bridge.py` calls Day 03's `run_pipeline`; the pure functions accept Day 03-style objects by duck typing | Complete; integration run on a patched copy only |
 | Command line | `python -m ticket_numerics file.csv` (`cli.py`); exit codes 0 / 2 / 3; `logs/cli_output.txt` | Complete |
-| Tests | 163 tests in 9 files (§4) | Complete |
+| Tests | 187 tests in 9 files (§4) | Complete |
 | Packaging and docs | `pyproject.toml`, `requirements.txt`, `.gitignore`, `README.md`, this report, `docs/day05_viva_answers.md`; Day 05 row in the root README | Complete |
 
 ---
@@ -77,16 +77,16 @@ _Drafted from the Day 05 session; review and edit in your own words before submi
 
 ```
 $ python -m pytest -q -W error                       # Day 03 not installed
-159 passed, 4 skipped in 0.2 s
+183 passed, 4 skipped in 0.2 s
 
 $ DAY03_CSV=<scratch Day 03> python -m pytest -q -W error -o pythonpath="src tests <scratch Day 03>/src"
-163 passed in 0.2 s
+187 passed in 0.2 s
 ```
 
 | Check | Result | Evidence |
 |---|---|---|
-| Full suite, Day 03 absent | 159 passed, 4 skipped (the 4 need `ticket_pipeline`) | `logs/test_results.txt` |
-| Full suite, real Day 03 code on a **scratch copy patched only for Python 3.9 syntax** (`StrEnum` stand-in, `ParamSpec` from `typing_extensions`, `zip(strict=)` removed; `csv.reader(strict=True)` kept) | 163 passed, 0 skipped | `logs/test_results_with_day03_py39_patched.txt` |
+| Full suite, Day 03 absent | 183 passed, 4 skipped (the 4 need `ticket_pipeline`) | `logs/test_results.txt` |
+| Full suite, real Day 03 code on a **scratch copy patched only for Python 3.9 syntax** (`StrEnum` stand-in, `ParamSpec` from `typing_extensions`, `zip(strict=)` removed; `csv.reader(strict=True)` kept) | 187 passed, 0 skipped | `logs/test_results_with_day03_py39_patched.txt` |
 | Hand-worked values from Day 03's sample | hours: mean 3.8, median 3.0, std 2.34, 5 present / 2 missing; ratings: mean 3.83, median 4.0; by category 3.0 / 6.25 / 2.0 / 1.5; high-priority open T001, T004, T009 | `tests/test_metrics.py`, `tests/test_arrays.py`, `tests/test_cli.py` |
 | Independent checks | `statistics` module, `math.fsum`, NumPy-free loop twins on 20 seeded random datasets, `np.broadcast_shapes` on every pair of shapes up to 2-D with sizes 0–3 | `tests/test_metrics.py`, `tests/test_broadcasting.py`, `tests/test_numerical.py` |
 | Test sensitivity | changing `std` to `ddof=1` made 28 tests fail | run once, by hand |
@@ -94,7 +94,7 @@ $ DAY03_CSV=<scratch Day 03> python -m pytest -q -W error -o pythonpath="src tes
 | Benchmark (count/mean/std, ~10 % missing, seed 42, 7 repeats, 1 warm-up) | at n = 100,000: loop 11.90 ms, NumPy 0.31 ms, list→array + NumPy 5.40 ms. One machine, one run; an earlier run gave 10.86 / 0.29 / 4.64 | `logs/benchmark.txt`; README §7.3 |
 | Run on real Python ≥ 3.11 | _[TO BE FILLED IN BY LAKSHIT]_ | — |
 
-Test files: `test_arrays.py` (30), `test_metrics.py` (29), `test_edge_cases.py` (22), `test_broadcasting.py` (15), `test_numerical.py` (10), `test_benchmark.py` (6), `test_regressions.py` (42), `test_cli.py` (4), `test_csv_structure.py` (4), `test_bridge.py` (1).
+Test files: `test_arrays.py` (30), `test_metrics.py` (29), `test_edge_cases.py` (22), `test_broadcasting.py` (15), `test_numerical.py` (10), `test_benchmark.py` (6), `test_regressions.py` (66), `test_cli.py` (4), `test_csv_structure.py` (4), `test_bridge.py` (1).
 
 Environment: macOS arm64, Python 3.9.6, NumPy 2.0.2, pytest 8.4.2.
 
@@ -128,6 +128,8 @@ Environment: macOS arm64, Python 3.9.6, NumPy 2.0.2, pytest 8.4.2.
 | 12 | The first CLI bad-quote test would have passed on a schema error | The test CSV had too few columns, so the schema check fired before the quote check | Test uses the full Day 03 header and asserts the message is not "missing required" |
 | 13 | `requirements.txt` pinned `pytest==8.3.5` but the logs were produced with 8.4.2 | The pin was typed, not read from the environment | Pin set to 8.4.2 |
 | 14 | My own scratch patch of Day 03 first removed `strict=True` from `csv.reader` too | A blanket text replace also matched that line | Replaced only the `zip(...)` arguments; the unterminated-quote test then passed |
+| 15 | **Code review 2026-11-18, blocker A:** `as_float_array([True, 1])` returned `[1.0, 1.0]`; `[False, 2.5]` returned `[0.0, 2.5]` | `np.asarray` promotes a mixed bool/number list to int/float *before* the dtype check, so the bool type was already erased | Non-array sequences are now converted with `dtype=object`, which keeps each element's type; every element is then checked (bool rejected, `None`→NaN kept). Regression tests plus valid-input controls |
+| 16 | **Code review 2026-11-18, blocker B:** `status="escalated"` gave `is_open=False`, same as a real closed ticket | `is_open` was only `status in OPEN_STATUSES`, with no check that the label was valid | Status goes through `_lookup` against `open/pending/resolved/closed` (the Day 03 `Status` values); anything else raises `NumericInputError("status: unknown value ...")`. Regression tests for invalid and valid labels |
 
 ---
 
@@ -150,7 +152,7 @@ _Drafted from the Day 05 session; review and edit in your own words before submi
 
 **Blocker:** Python ≥ 3.11 (needed by Day 03's `StrEnum`) was not available on the machine Day 05 was built on (only Python 3.9.6), so Day 05's Day 03 hand-off could not be run for real.
 
-**What I tried:** checked for other interpreters (none); kept the numerical core Python 3.9-compatible and duck-typed so it is testable on its own; then made a scratch copy of Day 03 patched only for 3.9 syntax and ran the whole suite against it (163 passed, §4). I also made the 4 tests that need Day 03 skip cleanly instead of fail when it is absent.
+**What I tried:** checked for other interpreters (none); kept the numerical core Python 3.9-compatible and duck-typed so it is testable on its own; then made a scratch copy of Day 03 patched only for 3.9 syntax and ran the whole suite against it (187 passed, §4). I also made the 4 tests that need Day 03 skip cleanly instead of fail when it is absent.
 
 **Still open:** run the suite on real Python ≥ 3.11 (`pip install -e ../Day-03-Python-Engineering-Practices-Exceptions-Testing && python -m pytest`) and record the result in §4.
 
