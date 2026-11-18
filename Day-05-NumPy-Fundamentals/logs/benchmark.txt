@@ -1,0 +1,20 @@
+BENCHMARK: count/mean/std of a column with ~10% missing values
+python 3.9.6 | numpy 2.0.2 | Darwin arm64 | seed 42 | repeats 7 (1 warm-up call each, median reported)
+Timing: time.perf_counter around one call; results verified equal before timing.
+
+         n  method           median ms      min ms   loop/method
+      1000  loop                0.1128      0.1118          1.0x
+      1000  numpy               0.0159      0.0152          7.1x
+      1000  numpy+convert       0.0636      0.0630          1.8x
+     10000  loop                1.2191      1.1804          1.0x
+     10000  numpy               0.0376      0.0372         32.4x
+     10000  numpy+convert       0.5000      0.4917          2.4x
+    100000  loop               11.9023     11.6228          1.0x
+    100000  numpy               0.3133      0.3027         38.0x
+    100000  numpy+convert       5.3957      4.8828          2.2x
+   1000000  loop              111.0758    109.5840          1.0x
+   1000000  numpy               4.0600      3.9638         27.4x
+   1000000  numpy+convert      52.2329     50.8078          2.1x
+
+Read with care: one machine, one run, background load not controlled.
+loop/method = loop median / method median. These are measurements, not guarantees.

@@ -1,0 +1,19 @@
+== shapes and dtypes ==
+ticket_ids        ArrayInfo(shape=(7,), ndim=1, dtype='<U4', itemsize=16, nbytes=112)
+resolution_hours  ArrayInfo(shape=(7,), ndim=1, dtype='float64', itemsize=8, nbytes=56)
+rating            ArrayInfo(shape=(7,), ndim=1, dtype='float64', itemsize=8, nbytes=56)
+priority_rank     ArrayInfo(shape=(7,), ndim=1, dtype='int8', itemsize=1, nbytes=7)
+category_code     ArrayInfo(shape=(7,), ndim=1, dtype='int8', itemsize=1, nbytes=7)
+is_open           ArrayInfo(shape=(7,), ndim=1, dtype='bool', itemsize=1, nbytes=7)
+numeric_matrix    ArrayInfo(shape=(7, 2), ndim=2, dtype='float64', itemsize=8, nbytes=112)
+
+== indexing / filtering (no loops) ==
+hours of open tickets      : [nan 1.5 nan 2. ]
+high-priority open ids     : ('T001', 'T004', 'T009')
+slice first 3 hours        : [nan 4.5 1.5] | view shares memory: True
+matrix column means (nan-aware): [3.8        3.83333333]
+
+== summaries ==
+hours : NumericSummary(count=5, missing=2, mean=3.8, median=3.0, std=2.34, minimum=1.5, maximum=8.0)
+rating: NumericSummary(count=6, missing=1, mean=3.83, median=4.0, std=0.69, minimum=3.0, maximum=5.0)
+hours by category (billing, technical, account, general, unknown): [3.   6.25 2.    nan 1.5 ] [1 2 1 0 1]

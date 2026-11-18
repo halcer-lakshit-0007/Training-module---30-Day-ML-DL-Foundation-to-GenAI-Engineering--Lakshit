@@ -1,0 +1,12 @@
+NUMERIC TICKET ANALYSIS
+  Valid tickets      : 7
+  resolution_hours   : ArrayInfo(shape=(7,), ndim=1, dtype='float64', itemsize=8, nbytes=56)
+  numeric matrix     : ArrayInfo(shape=(7, 2), ndim=2, dtype='float64', itemsize=8, nbytes=112)
+  Resolution hours   : count 5, missing 2, mean 3.80, median 3.00, std 2.34, min 1.50, max 8.00
+  Customer rating    : count 6, missing 1, mean 3.83, median 4.00
+  High-priority open : T001, T004, T009
+  Mean hours by category (tickets with a recorded time):
+    billing       3.00   (n=1)
+    technical     6.25   (n=2)
+    account       2.00   (n=1)
+    unknown       1.50   (n=1)
